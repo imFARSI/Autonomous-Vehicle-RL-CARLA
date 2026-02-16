@@ -1,0 +1,7 @@
+numpy<2.0
+tensorflow==2.11.0
+keras==2.11.0
+opencv-python
+matplotlib
+networkx
+sympy
