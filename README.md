@@ -1,137 +1,186 @@
-# Project Technical Details: Autonomous Vehicle RL
+# Autonomous Vehicle RL — DDPG on CARLA
 
-This document explains the architecture, methodologies, and learning process used in this autonomous vehicle reinforcement learning project.
-
-## 1. Technologies & Environment
-*   **Simulator:** CARLA 0.9.10 (UE4-based high-fidelity simulator).
-*   **Language:** Python 3.7.9 (selected for specific CARLA 0.9.10 API compatibility).
-*   **Deep Learning Framework:** TensorFlow 2.11.0 with Keras (using `compat.v1` for legacy support).
-*   **Agent Architecture:** Actor-Critic (DDPG).
-
-## 2. Methodology: Reinforcement Learning (RL)
-The project follows a **Deep Deterministic Policy Gradient (DDPG)** approach, which is an actor-critic algorithm specifically designed for continuous action spaces (like steering and throttle).
-
-### A. The "Brain" (Neural Networks)
-*   **The Actor:** Learns the "Policy." It takes the current state (what the car sees) and decides the best actions (Steering and Throttle).
-*   **The Critic:** Learns the "Value." It evaluates the actions taken by the Actor and tells it if they were good or bad.
-
-### B. State Representation (Input)
-The car understands its surroundings through:
-*   **Local Waypoints:** A vector of coordinates showing the relative path ahead.
-*   **Visual Data (Optional):** CNN networks (like PilotNet) for processing camera images.
-*   **Kinematics:** Current velocity and heading angle.
-
-### C. Reward Counting & Penalties (The "Points")
-The AI's score is calculated in every frame based on its performance. Here is how points are added or "cut":
-
-*   **Progress Reward (Positive):** 
-    `Reward = Velocity × Alignment`
-    *   The car gets more points for driving **faster** (KMH).
-    *   Points are added for staying **aligned** with the road (Low angle).
-*   **Centrality Penalty (Cutting Points):**
-    The further the car moves away from the **center of the lane**, the more points are subtracted from the progress reward.
-*   **Major Penalties (The "Big Cuts"):**
-    *   **Collision:** **-200 points** (Instant end of episode).
-    *   **Lane Departure:** **-200 points** (Instant end of episode if it crosses the line).
-*   **Bonus Reward:**
-    *   **Reaching the Destination:** **+100 points.**
-
-## 3. How the Learning Improves
-1.  **Exploration:** Initially, the car drives somewhat randomly.
-2.  **Experience Replay:** Every "memory" (state, action, reward) is stored in a **Replay Buffer**.
-3.  **Batch Training:** The AI randomly samples many memories from the buffer to train the networks. This ensures it learns from both past mistakes and successes.
-4.  **Target Networks:** We use "Target" versions of the networks that update slowly, which provides stability during the learning process.
-5.  **Iteration:** Over 8,000 episodes, the Actor gradually learns to maximize the Critic's score, resulting in smoother and safer driving.
-
-## 4. Project Features
-
-### ✅ Automatic Training Resume
-The system automatically saves your training progress every 3 episodes and resumes from the last checkpoint when you restart training.
-
-**How it works:**
-- Actor and Critic weights are saved to `rl_agent_09/data/data_WAYPOINTS_CARLA/`
-- On startup, the system automatically loads the most recent weights
-- Training continues from where you left off
-
-### ✅ Two Operating Modes
-
-#### 🎓 Training Mode (`train.bat`)
-- **Purpose:** Train the agent and improve performance
-- **Behavior:** Saves progress every 3 episodes, automatically resumes from checkpoint
-- **Use when:** You want the car to learn and get better
-
-#### 🎬 Demo Mode (`demo.bat`)
-- **Purpose:** Showcase the trained agent's performance
-- **Behavior:** Uses saved weights WITHOUT any training or modification. The car will **continue driving** even after reaching waypoints (doesn't stop at 15-meter completion like in training mode)
-- **Use when:** You want to demonstrate what the car has learned and see continuous autonomous driving
-
-### ✅ Progress Monitoring
-*   **TensorBoard:** Visualizes the "Learning Curve." An upward trend in the `average_reward` graph confirms the model is improving.
-*   **Weights:** Saved in `.h5` format in `rl_agent_09/data/`. These represent the learned "knowledge."
+Deep Reinforcement Learning agent for self-driving vehicles using DDPG (Deep Deterministic Policy Gradient) and the CARLA 0.9.10 simulator.
 
 ---
 
-## 5. How to Use This Project
+## 1. Technologies & Environment
+
+| Component | Details |
+|-----------|---------|
+| **Simulator** | CARLA 0.9.10 (UE4-based) |
+| **Language** | Python 3.7.9 |
+| **Framework** | TensorFlow 2.11.0 + Keras (`compat.v1`) |
+| **Algorithm** | DDPG — Actor-Critic for continuous action spaces |
+
+---
+
+## 2. How It Works
+
+The agent uses **DDPG** — an actor-critic algorithm for continuous control (steering + throttle).
+
+### Neural Networks
+- **Actor:** Takes the current state (waypoints + velocity) and outputs steering & throttle
+- **Critic:** Evaluates how good the actor's actions were
+
+### State Input
+- **Local Waypoints** — relative path coordinates ahead of the car
+- **Kinematics** — current velocity and heading angle
+
+### Reward System
+| Event | Reward |
+|-------|--------|
+| Driving fast & aligned with road | `+ Velocity × Alignment` |
+| Drifting from lane center | `− Centrality penalty` |
+| Collision | **−200** (episode ends) |
+| Lane departure | **−200** (episode ends) |
+| Reaching destination | **+100** |
+
+### Learning Process
+1. Car explores by driving (randomly at first)
+2. Each experience `(state, action, reward)` is stored in a **Replay Buffer**
+3. Random batches are sampled to train the networks
+4. **Target networks** update slowly for stable learning
+5. Over **8,000 episodes**, the car learns smoother, safer driving
+
+---
+
+## 3. Project Structure
+
+```
+Thesis first demo/
+├── rl_agent_09/             ← Main agent code
+│   ├── DDPG/
+│   │   ├── ddpg_carla.py    ← Main training/demo loop
+│   │   ├── actor.py         ← Actor network
+│   │   ├── critic.py        ← Critic network
+│   │   ├── carla_env.py     ← CARLA environment wrapper
+│   │   └── replay_buffer.py ← Experience replay
+│   ├── carla_config.py      ← All hyperparameters & settings
+│   ├── data/
+│   │   └── data_WAYPOINTS_CARLA/  ← Saved weights (.h5)
+│   └── logs/
+│       └── logs_WAYPOINTS_CARLA/  ← TensorBoard logs
+├── scripts/
+│   ├── start_carla.bat      ← Step 1: Launch CARLA simulator
+│   ├── train.bat            ← Step 2A: Train the agent
+│   ├── demo.bat             ← Step 2B: Run on trained weights
+│   ├── check_progress.bat   ← Check training progress anytime
+│   └── run_all.bat          ← Launch CARLA + training together
+└── README.md
+```
+
+---
+
+## 4. How to Use
 
 ### Prerequisites
-Make sure CARLA simulator and Python 3.7 environment are installed (see setup scripts if needed).
+- CARLA 0.9.10 simulator installed (run `scripts\extract_carla.bat` if needed)
+- Python 3.7 virtual environment set up (run `scripts\setup_python37.bat` if needed)
 
-### Step 1: Start the Simulator
+---
+
+### 🚀 Step 1 — Start the Simulator
 Open a terminal and run:
 ```powershell
 scripts\start_carla.bat
 ```
-Wait for the CARLA window to appear and the map to load.
+Wait until the CARLA window appears and the map (Town01) finishes loading (~30 seconds).
 
-### Step 2A: Training Mode (Learn & Improve)
+---
+
+### 🎓 Step 2A — Training Mode
+
 Open a **second terminal** and run:
 ```powershell
 scripts\train.bat
 ```
-**What happens:**
-- The car will start driving and learning
-- Progress is automatically saved every 3 episodes
-- If you stop and restart, training resumes from the last checkpoint
-- Let it run for many episodes (hundreds or thousands) to see improvement
 
-### Step 2B: Demo Mode (Showcase Trained Performance)
+**What happens:**
+- The car starts driving and learning from scratch (or resumes from last checkpoint)
+- Weights are **auto-saved every 3 episodes** to `rl_agent_09/data/data_WAYPOINTS_CARLA/`
+- Also saves milestone weights every **50 episodes** (`RANDOM_50_actor.h5`, `RANDOM_100_actor.h5`, ...)
+- Saves **best reward weights** whenever a new high score is achieved
+- Runs for up to **8,000 episodes** total
+
+**When is training done?**
+- ✅ `average_reward` graph in TensorBoard flattens/plateaus
+- ✅ The car drives smoothly with few crashes in demo mode
+- ✅ `RANDOM_best_reward_actor.h5` exists and reward is no longer improving
+
+> ⏱️ Expect ~1–3 min per episode early on. Meaningful behavior typically emerges after ~500 episodes (~8–24 hours).
+
+---
+
+### 🎬 Step 2B — Demo Mode (Run on Trained Weights)
+
 Open a **second terminal** and run:
 ```powershell
 scripts\demo.bat
 ```
+
 **What happens:**
-- The car runs using previously trained weights
-- NO training occurs - purely demonstration
-- Perfect for showing the difference between trained and untrained behavior
+- Loads the saved weights from `rl_agent_09/data/data_WAYPOINTS_CARLA/`
+- Car drives using what it has **already learned** — no training occurs
+- Runs continuously for demonstration
 
-### Step 3: Monitor Progress (Optional)
-To see the training curves and progress graphs:
-
-1. Open a **third** terminal
-2. Run this command:
-   ```powershell
-   .\venv37\Scripts\python.exe -m tensorboard.main --logdir=rl_agent_09/logs
-   ```
-3. Open your browser and go to: **http://localhost:6006**
-
-You'll see graphs showing how the car's performance improves over time!
+> ⚠️ Demo mode requires trained weights (`RANDOM_actor.h5`) to exist first. If no weights are saved yet, the car will drive randomly.
 
 ---
 
-## 6. Understanding the Results
+### 📊 Step 3 — Check Training Progress (Anytime)
 
-### Where Are Weights Saved?
-- **Location:** `rl_agent_09/data/data_WAYPOINTS_CARLA/`
-- **Files:** 
-  - `RANDOM_actor.h5` - The decision-making brain
-  - `RANDOM_critic.h5` - The evaluation brain
-- **Best weights:** Files with `_best_reward_` prefix contain the best performing models
+**Option A — Quick file check:**
+```powershell
+scripts\check_progress.bat
+```
+Shows: which weight files are saved, when they were last updated, and training status summary.
 
-### How to Know If It's Learning?
-1. **TensorBoard:** Check if `average_reward` graph trends upward
-2. **Observation:** The car should crash less and drive smoother over time
-3. **Console Output:** Episode rewards should generally increase
+**Option B — TensorBoard graphs:**
+Open a third terminal and run:
+```powershell
+.\venv37\Scripts\python.exe -m tensorboard.main --logdir=rl_agent_09/logs
+```
+Then open: **http://localhost:6006**
+
+You'll see live graphs for:
+- `average_reward` — should trend upward
+- `max_reward` — best episode reward so far
+- `distance` — average distance driven per episode
 
 ---
 
+## 5. Saved Weights Explained
 
+**Location:** `rl_agent_09/data/data_WAYPOINTS_CARLA/`
+
+| File | Description |
+|------|-------------|
+| `RANDOM_actor.h5` | Latest actor weights (updated every 3 eps) |
+| `RANDOM_critic.h5` | Latest critic weights (updated every 3 eps) |
+| `RANDOM_50_actor.h5` | Milestone checkpoint at episode 50 |
+| `RANDOM_100_actor.h5` | Milestone checkpoint at episode 100 |
+| `RANDOM_best_reward_actor.h5` | **Best performing weights ever** |
+
+> 💡 For demos and thesis presentation, use `RANDOM_best_reward_actor.h5` — it represents the agent's peak performance.
+
+---
+
+## 6. Hyperparameters (carla_config.py)
+
+| Parameter | Value | Meaning |
+|-----------|-------|---------|
+| `episodes_num` | 8,000 | Total training episodes |
+| `max_steps` | 100,000 | Max steps per episode |
+| `batch_size` | 32 | Samples per training update |
+| `gamma` | 0.99 | Future reward discount |
+| `tau` | 0.001 | Target network update rate |
+| `lra` | 0.0001 | Actor learning rate |
+| `lrc` | 0.001 | Critic learning rate |
+| `buffer_size` | 100,000 | Replay buffer capacity |
+
+---
+
+## 7. Training Is Resumable
+
+If you stop training and restart `train.bat`, it **automatically resumes** from the last saved weights. No progress is lost.
