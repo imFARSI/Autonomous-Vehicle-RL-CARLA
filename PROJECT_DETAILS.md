@@ -56,14 +56,15 @@ The system automatically saves your training progress every 3 episodes and resum
 ### ✅ Two Operating Modes
 
 #### 🎓 Training Mode (`train.bat`)
-- **Purpose:** Train the agent and improve performance
-- **Behavior:** Saves progress every 3 episodes, automatically resumes from checkpoint
-- **Use when:** You want the car to learn and get better
+- **Purpose:** Train the agent and improve performance progressively over time
+- **Cumulative Learning:** Every time you run `train.bat`, it loads the *last saved weights* and continues training from where you left off. The knowledge stacks across all your training sessions!
+- **Behavior:** Saves progress every 3 episodes to `RANDOM_actor.h5` and `RANDOM_critic.h5`
+- **Use when:** You want the car to learn and get better. Train whenever you have time!
 
 #### 🎬 Demo Mode (`demo.bat`)
-- **Purpose:** Showcase the trained agent's performance
-- **Behavior:** Uses saved weights WITHOUT any training or modification. The car will **continue driving** even after reaching waypoints (doesn't stop at 15-meter completion like in training mode)
-- **Use when:** You want to demonstrate what the car has learned and see continuous autonomous driving
+- **Purpose:** Showcase the trained agent's cumulative performance
+- **Behavior:** Uses the single latest saved weights file (`RANDOM_actor.h5`). It uses all the knowledge accumulated across *all* your past training sessions combined up to that point. NO training or modification occurs. The car will **continue driving** even after reaching waypoints.
+- **Use when:** You want to demonstrate the car's current intelligence level and see continuous autonomous driving. As you complete more training sessions, the demo automatically gets better!
 
 ### ✅ Progress Monitoring
 *   **TensorBoard:** Visualizes the "Learning Curve." An upward trend in the `average_reward` graph confirms the model is improving.
@@ -105,8 +106,16 @@ scripts\demo.bat
 - Perfect for showing the difference between trained and untrained behavior
 
 ### Step 3: Monitor Progress (Optional)
-To see the training curves and progress graphs:
+To check how much you've trained or see the progress graphs:
 
+**Option A: Quick Progress Check**
+Open a terminal and run:
+```powershell
+scripts\check_progress.bat
+```
+This instantly shows you all saved weights, milestone episodes reached, and overall training status.
+
+**Option B: Live TensorBoard Graphs**
 1. Open a **third** terminal
 2. Run this command:
    ```powershell

@@ -120,9 +120,10 @@ scripts\demo.bat
 ```
 
 **What happens:**
-- Loads the saved weights from `rl_agent_09/data/data_WAYPOINTS_CARLA/`
-- Car drives using what it has **already learned** — no training occurs
-- Runs continuously for demonstration
+- Loads the single latest saved weights file (`RANDOM_actor.h5`) from `rl_agent_09/data/data_WAYPOINTS_CARLA/`
+- Car drives using **all the knowledge accumulated across all your past training sessions combined**
+- No new learning occurs — purely for demonstration
+- As you do more training sessions over time, this demo automatically becomes smoother and smarter!
 
 > ⚠️ Demo mode requires trained weights (`RANDOM_actor.h5`) to exist first. If no weights are saved yet, the car will drive randomly.
 
@@ -181,6 +182,11 @@ You'll see live graphs for:
 
 ---
 
-## 7. Training Is Resumable
+## 7. Cumulative Training Workflow
 
-If you stop training and restart `train.bat`, it **automatically resumes** from the last saved weights. No progress is lost.
+Your training process is **100% cumulative**. You do *not* need to train 8,000 episodes all at once!
+
+1. **Train when you have time:** Run `train.bat` for an hour, then stop it.
+2. **It remembers:** The agent saves everything it learned into `RANDOM_actor.h5`.
+3. **Resume later:** Next time you run `train.bat`, it loads `RANDOM_actor.h5` and continues learning strictly from where it left off.
+4. **Demo updates automatically:** Whenever you run `demo.bat`, it uses that same `RANDOM_actor.h5` file, meaning the demo is automatically infused with all your cumulative training history.
