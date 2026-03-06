@@ -35,7 +35,7 @@ carla_temp.zip
 logs/
 models/
 rl_agent_09/logs/
-rl_agent_09/data/
+# rl_agent_09/data/  <-- Un-ignored to include model weights
 __pycache__
 *.log
 
